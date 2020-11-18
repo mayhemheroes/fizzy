@@ -22,6 +22,9 @@ executors:
     docker:
       - image: cimg/rust:1.60
 
+orbs:
+  win: circleci/windows@2.2.0
+
 commands:
   install_macos_deps:
     description: "Install macOS system dependencies"
@@ -121,6 +124,34 @@ commands:
           key: *hunter-cache-key
           paths:
             - ~/.hunter/_Base/Cache
+      - run:
+          name: "Build <<parameters.configuration_name>> (<<parameters.build_type>>)"
+          command: |
+            export CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-8}
+            cmake --build ~/build --target <<parameters.target>>
+
+  build_win:
+    description: "Build"
+    parameters:
+      configuration_name:
+        type: string
+        default: ""
+      build_type:
+        type: enum
+        enum: [ "Debug", "Release", "RelWithDebInfo", "Coverage" ]
+      cmake_options:
+        type: string
+        default: ""
+      target:
+        type: string
+        default: all
+    steps:
+      - run:
+          name: "Configure <<parameters.configuration_name>> (<<parameters.build_type>>)"
+          working_directory: ~/build
+          command: |
+            rm -f CMakeCache.txt
+            cmake ../project -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX=~/install -DCMAKE_BUILD_TYPE=<<parameters.build_type>> -DFIZZY_TESTING=ON -DFIZZY_WASI=ON <<parameters.cmake_options>>
       - run:
           name: "Build <<parameters.configuration_name>> (<<parameters.build_type>>)"
           command: |
@@ -399,6 +430,15 @@ jobs:
           build_type: Release
           cmake_options: -DNATIVE=ON
       - test
+
+  release-win:
+    executor:
+      name: win/default
+      shell: powershell.exe
+    steps:
+      - checkout
+      - build_win:
+          build_type: Release
 
   coverage-clang:
     executor: linux-clang-latest
@@ -789,6 +829,7 @@ workflows:
       - release-native-linux
       - release-macos
       - release-native-macos
+      - release-win
       - coverage-gcc:
           requires:
             - fetch-spectests
