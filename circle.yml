@@ -116,7 +116,7 @@ commands:
           working_directory: ~/build
           command: |
             rm -f CMakeCache.txt
-            cmake ../project -G Ninja -DCMAKE_INSTALL_PREFIX=~/install -DCMAKE_BUILD_TYPE=<<parameters.build_type>> -DFIZZY_TESTING=ON -DFIZZY_WASI=ON <<parameters.cmake_options>>
+            cmake ../project -DCMAKE_INSTALL_PREFIX=~/install -DCMAKE_BUILD_TYPE=<<parameters.build_type>> -DFIZZY_TESTING=ON -DFIZZY_WASI=ON <<parameters.cmake_options>>
       - save_cache:
           name: "Save Hunter cache"
           key: *hunter-cache-key
@@ -445,6 +445,26 @@ jobs:
           min_time: "0.01"
       - spectest
 
+
+  arm64-native:
+    machine:
+      image: ubuntu-2004:current
+      resource_class: arm.large
+    environment:
+      ASAN_OPTIONS: detect_stack_use_after_return=1:check_initialization_order=1
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+#      - install_testfloat
+      - checkout
+      - build:
+          build_type: RelWithDebInfo
+          cmake_options: -DENABLE_ASSERTIONS=ON
+#          cmake_options: -DENABLE_ASSERTIONS=ON -DSANITIZE=address,undefined,nullability,implicit-unsigned-integer-truncation,implicit-signed-integer-truncation
+      - test
+      - benchmark:
+          min_time: "0.01"
+#      - spectest
+
   sanitizers-gcc:
     executor: linux-gcc-latest
     environment:
@@ -737,25 +757,26 @@ workflows:
   testing:
     unless: <<pipeline.parameters.benchmark>>
     jobs:
-      - lint
-      - release-linux
-      - release-native-linux
-      - release-macos
-      - release-native-macos
-      - coverage-gcc
-      - coverage-clang
-      - sanitizers-clang
-      - sanitizers-gcc
-      - sanitizers-macos
-      - fuzzing
-      - spectest:
-          requires:
-            - coverage-clang
-      - x86-linux
-      - arm64-linux
-      - bindings-rust
-      - bindings-rust-asan
-      - bindings-rust-coverage
+      - arm64-native
+#      - lint
+#      - release-linux
+#      - release-native-linux
+#      - release-macos
+#      - release-native-macos
+#      - coverage-gcc
+#      - coverage-clang
+#      - sanitizers-clang
+#      - sanitizers-gcc
+#      - sanitizers-macos
+#      - fuzzing
+#      - spectest:
+#          requires:
+#            - coverage-clang
+#      - x86-linux
+#      - arm64-linux
+#      - bindings-rust
+#      - bindings-rust-asan
+#      - bindings-rust-coverage
 
   benchmarking:
     when: <<pipeline.parameters.benchmark>>
