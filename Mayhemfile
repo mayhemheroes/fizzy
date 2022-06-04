@@ -1,0 +1,7 @@
+project: fizzy
+target: fizzy-wasi
+
+cmds:
+  - cmd: /repo/build/bin/fizzy-wasi @@
+    env:
+      DISABLE_SMOKETEST: '1'
