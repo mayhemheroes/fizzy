@@ -28,7 +28,7 @@ endif()
 cable_set_build_type(DEFAULT Release CONFIGURATION_TYPES Debug;Release;Coverage)
 
 project(fizzy LANGUAGES CXX C)
-set(PROJECT_VERSION 0.8.0-dev)
+set(PROJECT_VERSION 0.9.0-dev)
 set(CMAKE_CXX_EXTENSIONS OFF)  # Disable extensions to C++ standards in Fizzy targets.
 
 include(TestBigEndian)
@@ -69,6 +69,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES Clang)
             -Wno-switch-enum
         )
     endif()
+endif()
+
+# This currently is for checking 32-bit mode on x86_64.
+# TODO: potentially include x86, i386, i686 here
+if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # On 32-bit opt-in for floating-point implementation with SSE2.
+    # See the "x87 FPU" section in the README for explanation.
+    add_compile_options(-msse2 -mfpmath=sse)
 endif()
 
 # An option to enable assertions in non-Debug build types.
